@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Details Manager</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        /* Add your custom styles here */
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h2>Bank Details Manager</h2>
+    
+    <!-- Bank Form -->
+    <form id="bankForm">
+        <div class="form-group">
+            <label for="bankName">Bank Name</label>
+            <input type="text" class="form-control" id="bankName" required>
+        </div>
+        <div class="form-group">
+            <label for="accountName">Account Name</label>
+            <input type="text" class="form-control" id="accountName" required>
+        </div>
+        <div class="form-group">
+            <label for="accountNumber">Account Number</label>
+            <input type="text" class="form-control" id="accountNumber" required>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addBank()">Add Bank</button>
+    </form>
+
+    <!-- Bank List -->
+    <ul id="bankList" class="list-group mt-3">
+        <!-- Bank details will be dynamically added here -->
+    </ul>
+</div>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+<script>
+    // Array to store bank details
+    let banks = [];
+
+    // Function to add a new bank
+    function addBank() {
+        const bankName = document.getElementById('bankName').value;
+        const accountName = document.getElementById('accountName').value;
+        const accountNumber = document.getElementById('accountNumber').value;
+
+        if (bankName && accountName && accountNumber) {
+            const bank = {
+                bankName,
+                accountName,
+                accountNumber
+            };
+
+            banks.push(bank);
+            renderBankList();
+            clearForm();
+        } else {
+            alert('Please fill in all fields');
+        }
+    }
+
+    // Function to render the bank list
+    function renderBankList() {
+        const bankListContainer = document.getElementById('bankList');
+        bankListContainer.innerHTML = '';
+
+        banks.forEach((bank, index) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item';
+
+            listItem.innerHTML = `
+                <strong>${bank.bankName}</strong><br>
+                Account Name: ${bank.accountName}<br>
+                Account Number: ${bank.accountNumber}<br>
+                <button class="btn btn-warning btn-sm" onclick="editBank(${index})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteBank(${index})">Delete</button>
+                <button class="btn btn-success btn-sm" onclick="copyDetails(${index})">Copy</button>
+            `;
+
+            bankListContainer.appendChild(listItem);
+        });
+    }
+
+    // Function to edit a bank
+    function editBank(index) {
+        const bank = banks[index];
+        document.getElementById('bankName').value = bank.bankName;
+        document.getElementById('accountName').value = bank.accountName;
+        document.getElementById('accountNumber').value = bank.accountNumber;
+
+        banks.splice(index, 1);
+        renderBankList();
+    }
+
+    // Function to delete a bank
+    function deleteBank(index) {
+        banks.splice(index, 1);
+        renderBankList();
+    }
+
+    // Function to copy details to clipboard
+    function copyDetails(index) {
+        const bank = banks[index];
+        const detailsString = `Bank Name: ${bank.bankName}\nAccount Name: ${bank.accountName}\nAccount Number: ${bank.accountNumber}`;
+        navigator.clipboard.writeText(detailsString);
+        alert('Details copied to clipboard!');
+    }
+
+    // Function to clear the form
+    function clearForm() {
+        document.getElementById('bankName').value = '';
+        document.getElementById('accountName').value = '';
+        document.getElementById('accountNumber').value = '';
+    }
+</script>
+
+</body>
+</html>
