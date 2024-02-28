@@ -8,15 +8,28 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <style>
         /* Add your custom styles here */
+        .logo-container {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            max-width: 100px; /* Adjust the max-width as needed */
+        }
     </style>
 </head>
 <body>
 
 <div class="container mt-5">
-    <h2>Bank Details Manager</h2>
+    <div class="logo-container">
+        <!-- Replace "YOUR_LOGO_URL" with the actual URL of your logo -->
+        <img src="https://i.pinimg.com/564x/9f/ea/1c/9fea1cde08fe17ea8865c0cf08b9a982.jpg" alt="Logo">
+    </div>
     
+    <h2>Bank Details Manager</h2>
+
     <!-- Bank Form -->
-    <form id="bankForm">
+    <form id="bankForm" style="display: none;">
         <div class="form-group">
             <label for="bankName">Bank Name</label>
             <input type="text" class="form-control" id="bankName" required>
@@ -29,13 +42,28 @@
             <label for="accountNumber">Account Number</label>
             <input type="text" class="form-control" id="accountNumber" required>
         </div>
-        <button type="button" class="btn btn-primary" onclick="addBank()">Add Bank</button>
+        <div id="buttonsContainer">
+            <button type="button" class="btn btn-success" onclick="saveBank()">Save</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelBank()">Cancel</button>
+        </div>
     </form>
+
+    <!-- Add Bank Button -->
+    <div id="addButtonContainer">
+        <button type="button" class="btn btn-success add-button" onclick="showBankForm()">+</button>
+    </div>
 
     <!-- Bank List -->
     <ul id="bankList" class="list-group mt-3">
         <!-- Bank details will be dynamically added here -->
     </ul>
+
+    <!-- Export Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <button type="button" class="btn btn-info btn-block" onclick="exportToJSON()">Export to JSON</button>
+        </div>
+    </div>
 </div>
 
 <!-- Bootstrap JS and Popper.js -->
@@ -47,8 +75,15 @@
     // Array to store bank details
     let banks = [];
 
-    // Function to add a new bank
-    function addBank() {
+    // Function to show bank form
+    function showBankForm() {
+        document.getElementById('addButtonContainer').style.display = 'none';
+        document.getElementById('bankForm').style.display = 'block';
+        document.getElementById('buttonsContainer').style.display = 'block';
+    }
+
+    // Function to save a new bank
+    function saveBank() {
         const bankName = document.getElementById('bankName').value;
         const accountName = document.getElementById('accountName').value;
         const accountNumber = document.getElementById('accountNumber').value;
@@ -63,9 +98,16 @@
             banks.push(bank);
             renderBankList();
             clearForm();
+            hideForm();
         } else {
             alert('Please fill in all fields');
         }
+    }
+
+    // Function to cancel bank addition
+    function cancelBank() {
+        clearForm();
+        hideForm();
     }
 
     // Function to render the bank list
@@ -90,6 +132,37 @@
         });
     }
 
+    // Function to hide the form after adding or canceling a bank
+    function hideForm() {
+        document.getElementById('bankForm').style.display = 'none';
+        document.getElementById('addButtonContainer').style.display = 'block';
+    }
+
+    // Function to clear the form
+    function clearForm() {
+        document.getElementById('bankName').value = '';
+        document.getElementById('accountName').value = '';
+        document.getElementById('accountNumber').value = '';
+    }
+
+    // Function to export banks to JSON
+    function exportToJSON() {
+        if (banks.length > 0) {
+            const jsonContent = JSON.stringify(banks, null, 2);
+            const blob = new Blob([jsonContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bank_details.json';
+            a.click();
+
+            URL.revokeObjectURL(url);
+        } else {
+            alert('No banks to export.');
+        }
+    }
+
     // Function to edit a bank
     function editBank(index) {
         const bank = banks[index];
@@ -97,8 +170,8 @@
         document.getElementById('accountName').value = bank.accountName;
         document.getElementById('accountNumber').value = bank.accountNumber;
 
-        banks.splice(index, 1);
-        renderBankList();
+        // Do not remove the bank, just show the fields for editing
+        showBankForm();
     }
 
     // Function to delete a bank
@@ -113,13 +186,6 @@
         const detailsString = `Bank Name: ${bank.bankName}\nAccount Name: ${bank.accountName}\nAccount Number: ${bank.accountNumber}`;
         navigator.clipboard.writeText(detailsString);
         alert('Details copied to clipboard!');
-    }
-
-    // Function to clear the form
-    function clearForm() {
-        document.getElementById('bankName').value = '';
-        document.getElementById('accountName').value = '';
-        document.getElementById('accountNumber').value = '';
     }
 </script>
 
