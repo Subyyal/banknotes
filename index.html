@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Details Manager</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        /* Add your custom styles here */
+        .branding {
+            display: flex;
+            align-items: center;
+        }
+
+        .branding img {
+            width: 50px; /* Adjust the size as needed */
+            margin-right: 10px;
+        }
+
+        #bankForm {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <div class="branding">
+        <img src="https://i.pinimg.com/564x/9f/ea/1c/9fea1cde08fe17ea8865c0cf08b9a982.jpg" alt="Logo">
+        <h2>Bank Details Manager</h2>
+    </div>
+
+    <!-- Add Bank Button -->
+    <button type="button" class="btn btn-primary mt-3" onclick="showBankForm()">Add Bank</button>
+    
+    <!-- Bank Form -->
+    <form id="bankForm">
+        <div class="form-group">
+            <label for="bankName">Bank Name</label>
+            <input type="text" class="form-control" id="bankName" required>
+        </div>
+        <div class="form-group">
+            <label for="accountName">Account Name</label>
+            <input type="text" class="form-control" id="accountName" required>
+        </div>
+        <div class="form-group">
+            <label for="accountNumber">Account Number</label>
+            <input type="text" class="form-control" id="accountNumber" required>
+        </div>
+        <button type="button" class="btn btn-success" onclick="addBank()">Save Bank</button>
+    </form>
+
+    <!-- Bank List -->
+    <ul id="bankList" class="list-group mt-3">
+        <!-- Bank details will be dynamically added here -->
+    </ul>
+</div>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<!-- PouchDB -->
+<script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+
+<script>
+    // Initialize PouchDB
+    const db = new PouchDB('banks');
+
+    // Function to show bank form
+    function showBankForm() {
+        document.getElementById('bankForm').style.display = 'block';
+    }
+
+    // Function to add a new bank
+    async function addBank() {
+        const bankName = document.getElementById('bankName').value;
+        const accountName = document.getElementById('accountName').value;
+        const accountNumber = document.getElementById('accountNumber').value;
+
+        if (bankName && accountName && accountNumber) {
+            const bank = {
+                bankName,
+                accountName,
+                accountNumber
+            };
+
+            try {
+                // Save the bank to PouchDB
+                await saveBanks([bank]);
+
+                // Hide the bank form
+                document.getElementById('bankForm').style.display = 'none';
+
+                // Render the updated bank list
+                renderBankList();
+                clearForm();
+            } catch (error) {
+                console.error('Error adding bank:', error);
+            }
+        } else {
+            alert('Please fill in all fields');
+        }
+    }
+
+    // Function to save banks to PouchDB without conflict resolution
+    async function saveBanks(banks) {
+        const savePromises = banks.map(async (bank) => {
+            try {
+                if (!bank._id) {
+                    // If _id is not set, generate a unique ID
+                    bank._id = new Date().toISOString();
+                }
+
+                // Attempt to update the document or create a new one if it doesn't exist
+                await db.put(bank);
+            } catch (error) {
+                console.error('Error saving banks to PouchDB:', error);
+            }
+        });
+
+        return Promise.all(savePromises);
+    }
+
+    // Function to render the bank list
+    async function renderBankList() {
+        const bankListContainer = document.getElementById('bankList');
+        bankListContainer.innerHTML = '';
+
+        try {
+            // Get all documents from PouchDB
+            const result = await db.allDocs({ include_docs: true });
+
+            result.rows.forEach((row) => {
+                const bank = row.doc;
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+
+                listItem.innerHTML = `
+                    <strong>${bank.bankName}</strong><br>
+                    Account Name: ${bank.accountName}<br>
+                    Account Number: ${bank.accountNumber}<br>
+                    <button class="btn btn-warning btn-sm" onclick="editBank('${bank._id}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteBank('${bank._id}')">Delete</button>
+                    <button class="btn btn-success btn-sm" onclick="copyDetails('${bank._id}')">Copy</button>
+                `;
+
+                bankListContainer.appendChild(listItem);
+            });
+        } catch (error) {
+            console.error('Error rendering bank list:', error);
+        }
+    }
+
+    // Function to edit a bank
+    async function editBank(id) {
+        try {
+            // Get the document from PouchDB by ID
+            const bank = await db.get(id);
+
+            // Populate the form with the bank details
+            document.getElementById('bankName').value = bank.bankName;
+            document.getElementById('accountName').value = bank.accountName;
+            document.getElementById('accountNumber').value = bank.accountNumber;
+
+            // Delete the existing document
+            await db.remove(bank);
+
+            // Show the bank form
+            document.getElementById('bankForm').style.display = 'block';
+
+            // Render the updated bank list
+            renderBankList();
+        } catch (error) {
+            console.error('Error editing bank:', error);
+        }
+    }
+
+    // Function to delete a bank
+    async function deleteBank(id) {
+        try {
+            // Get the document from PouchDB by ID
+            const bank = await db.get(id);
+
+            // Delete the document
+            await db.remove(bank);
+
+            // Render the updated bank list
+            renderBankList();
+        } catch (error) {
+            console.error('Error deleting bank:', error);
+        }
+    }
+
+    // Function to copy details to clipboard
+    async function copyDetails(id) {
+        try {
+            // Get the document from PouchDB by ID
+            const bank = await db.get(id);
+            const detailsString = `Bank Name: ${bank.bankName}\nAccount Name: ${bank.accountName}\nAccount Number: ${bank.accountNumber}`;
+            navigator.clipboard.writeText(detailsString);
+            alert('Details copied to clipboard!');
+        } catch (error) {
+            console.error('Error copying details:', error);
+        }
+    }
+
+    // Function to clear the form
+    function clearForm() {
+        document.getElementById('bankName').value = '';
+        document.getElementById('accountName').value = '';
+        document.getElementById('accountNumber').value = '';
+    }
+
+    // Initial render of bank list
+    renderBankList();
+</script>
+
+</body>
+</html>
