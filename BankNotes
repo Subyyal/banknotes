@@ -16,17 +16,30 @@
         .logo-container img {
             max-width: 100px; /* Adjust the max-width as needed */
         }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .add-button-container {
+            text-align: right;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container mt-5">
-    <div class="logo-container">
-        <!-- Replace "YOUR_LOGO_URL" with the actual URL of your logo -->
-        <img src="https://i.pinimg.com/564x/9f/ea/1c/9fea1cde08fe17ea8865c0cf08b9a982.jpg" alt="Logo">
+    <div class="row">
+        <div class="col-6 logo-container">
+            <!-- Replace "YOUR_LOGO_URL" with the actual URL of your logo -->
+            <img src="YOUR_LOGO_URL" alt="Logo">
+        </div>
+        <div class="col-6 title-container">
+            <h2>Bank Details Manager</h2>
+        </div>
     </div>
-    
-    <h2>Bank Details Manager</h2>
 
     <!-- Bank Form -->
     <form id="bankForm" style="display: none;">
@@ -49,8 +62,16 @@
     </form>
 
     <!-- Add Bank Button -->
-    <div id="addButtonContainer">
-        <button type="button" class="btn btn-success add-button" onclick="showBankForm()">+</button>
+    <div class="add-button-container">
+        <button type="button" class="btn btn-success add-button" onclick="toggleBankForm()">+ Add Bank</button>
+    </div>
+
+    <!-- Import Button -->
+    <div class="row mt-2">
+        <div class="col-md-6">
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleFileSelect()">
+            <button type="button" class="btn btn-primary btn-block" onclick="openFilePicker()">Import Banks</button>
+        </div>
     </div>
 
     <!-- Bank List -->
@@ -75,14 +96,34 @@
     // Array to store bank details
     let banks = [];
 
+    // Index to keep track of the bank being edited
+    let editingIndex = -1;
+
+    // Function to toggle bank form visibility
+    function toggleBankForm() {
+        const bankForm = document.getElementById('bankForm');
+        if (bankForm.style.display === 'none' || bankForm.style.display === '') {
+            showBankForm();
+        } else {
+            hideBankForm();
+        }
+    }
+
     // Function to show bank form
     function showBankForm() {
-        document.getElementById('addButtonContainer').style.display = 'none';
         document.getElementById('bankForm').style.display = 'block';
         document.getElementById('buttonsContainer').style.display = 'block';
     }
 
-    // Function to save a new bank
+    // Function to hide bank form
+    function hideBankForm() {
+        document.getElementById('bankForm').style.display = 'none';
+        document.getElementById('buttonsContainer').style.display = 'none';
+        clearForm();
+        editingIndex = -1; // Reset editingIndex when hiding the form
+    }
+
+    // Function to save a new or edited bank
     function saveBank() {
         const bankName = document.getElementById('bankName').value;
         const accountName = document.getElementById('accountName').value;
@@ -95,19 +136,27 @@
                 accountNumber
             };
 
-            banks.push(bank);
+            if (editingIndex !== -1) {
+                // If editingIndex is set, update the existing bank
+                banks[editingIndex] = bank;
+                editingIndex = -1; // Reset editingIndex after updating
+            } else {
+                // Otherwise, add a new bank
+                banks.push(bank);
+            }
+
             renderBankList();
             clearForm();
-            hideForm();
+            hideBankForm();
         } else {
             alert('Please fill in all fields');
         }
     }
 
-    // Function to cancel bank addition
+    // Function to cancel bank addition or editing
     function cancelBank() {
         clearForm();
-        hideForm();
+        hideBankForm();
     }
 
     // Function to render the bank list
@@ -130,12 +179,6 @@
 
             bankListContainer.appendChild(listItem);
         });
-    }
-
-    // Function to hide the form after adding or canceling a bank
-    function hideForm() {
-        document.getElementById('bankForm').style.display = 'none';
-        document.getElementById('addButtonContainer').style.display = 'block';
     }
 
     // Function to clear the form
@@ -170,8 +213,8 @@
         document.getElementById('accountName').value = bank.accountName;
         document.getElementById('accountNumber').value = bank.accountNumber;
 
-        // Do not remove the bank, just show the fields for editing
-        showBankForm();
+        editingIndex = index; // Set editingIndex to the current index
+        showBankForm(); // Show the form for editing
     }
 
     // Function to delete a bank
@@ -186,6 +229,31 @@
         const detailsString = `Bank Name: ${bank.bankName}\nAccount Name: ${bank.accountName}\nAccount Number: ${bank.accountNumber}`;
         navigator.clipboard.writeText(detailsString);
         alert('Details copied to clipboard!');
+    }
+
+    // Function to handle file selection for import
+    function handleFileSelect() {
+        const fileInput = document.getElementById('importFile');
+        const file = fileInput.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const importedBanks = JSON.parse(e.target.result);
+                    banks = importedBanks;
+                    renderBankList();
+                } catch (error) {
+                    alert('Invalid JSON file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    // Function to open file picker
+    function openFilePicker() {
+        document.getElementById('importFile').click();
     }
 </script>
 
